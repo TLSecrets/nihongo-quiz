@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>大学日本語Ⅲ — 期末復習クイズ</title>
+<style>
+  :root {
+    --bg: #faf8f3; --paper: #fefef9; --ink: #1a1a2e; --ink-light: #5a5a6e;
+    --divider: #d4cfc4; --radius: 12px;
+    --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --mod-read: #c13b2a; --mod-read-bg: #faf3f2;
+    --mod-kanji: #2d4a7a; --mod-kanji-bg: #f2f4f8;
+    --mod-gairaigo: #2d6e3a; --mod-gairaigo-bg: #f2f7f3;
+    --mod-grammar: #8b6e2e; --mod-grammar-bg: #faf7f0;
+    --mod-combi: #5a3a7a; --mod-combi-bg: #f5f2f8;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: 'Noto Sans JP', 'Yu Gothic', 'Microsoft YaHei', sans-serif;
+    line-height: 1.8; min-height: 100vh; transition: background 0.5s;
+  }
+  body.mode-read { background: var(--mod-read-bg); }
+  body.mode-kanji { background: var(--mod-kanji-bg); }
+  body.mode-gairaigo { background: var(--mod-gairaigo-bg); }
+  body.mode-grammar { background: var(--mod-grammar-bg); }
+  body.mode-combi { background: var(--mod-combi-bg); }
+  .top-bar {
+    position: sticky; top:0; z-index:200;
+    background: rgba(254,254,249,0.9);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--divider);
+    padding:0 24px; height:56px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .top-bar .brand {
+    font-family: 'Yu Mincho', serif;
+    font-size:1.05rem; font-weight:700; color: #2d3a6e;
+  }
+  .progress-pill { display:flex; align-items:center; gap:10px; font-size:0.85rem; color:var(--ink-light); }
+  .progress-bar-outer { width:100px; height:6px; background:#e8e4d8; border-radius:10px; overflow:hidden; }
+  .progress-bar-inner { height:100%; border-radius:10px; transition: width 0.5s; }
+  .tab-nav {
+    position: sticky; top:56px; z-index:199;
+    background: rgba(254,254,249,0.88); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--divider);
+    display:flex; justify-content:center; padding:0 8px; overflow-x:auto;
+  }
+  .tab-btn {
+    padding:10px 16px; border:none; background:transparent; cursor:pointer;
+    font-size:0.82rem; font-weight:600; color: var(--ink-light);
+    border-bottom: 3px solid transparent; transition: all var(--transition); white-space:nowrap;
+  }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn[data-mod="read"].active { border-bottom-color: var(--mod-read); color: var(--mod-read); }
+  .tab-btn[data-mod="kanji"].active { border-bottom-color: var(--mod-kanji); color: var(--mod-kanji); }
+  .tab-btn[data-mod="gairaigo"].active { border-bottom-color: var(--mod-gairaigo); color: var(--mod-gairaigo); }
+  .tab-btn[data-mod="grammar"].active { border-bottom-color: var(--mod-grammar); color: var(--mod-grammar); }
+  .tab-btn[data-mod="combi"].active { border-bottom-color: var(--mod-combi); color: var(--mod-combi); }
+
+  #countPanelContainer {
+    max-width:860px;
+    margin:0 auto;
+    padding:12px 16px 0;
+  }
+  .count-set-panel {
+    background: var(--paper);
+    border:1px solid var(--divider);
+    border-radius: var(--radius);
+    padding:14px 18px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+  }
+  .count-set-panel .title {
+    width:100%;
+    font-size:0.85rem;
+    color:var(--ink-light);
+    font-weight:600;
+  }
+  .count-item {
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .count-item label {
+    font-size:0.8rem;
+  }
+  .count-item input {
+    width:54px;
+    padding:6px 4px;
+    border:1px solid var(--divider);
+    border-radius:6px;
+    text-align:center;
+  }
+  .apply-count-btn {
+    padding:6px 14px;
+    background:#2d3a7a;
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:0.8rem;
+  }
+
+  .main-container {
+    max-width:860px;
+    margin:0 auto;
+    padding:12px 16px 80px;
+  }
+
+  .module-panel { display:none; }
+  .module-panel.show { display:block; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+  .m-header { text-align:center; margin-bottom:32px; }
+  .m-header .label {
+    display:inline-block; font-size:0.72rem; letter-spacing:0.14em;
+    font-weight:600; padding:4px 14px; border-radius:20px; margin-bottom:12px;
+  }
+  .m-read .label { color:var(--mod-read); border:1px solid rgba(193,59,42,0.3); }
+  .m-kanji .label { color:var(--mod-kanji); border:1px solid rgba(45,74,122,0.3); }
+  .m-gairaigo .label { color:var(--mod-gairaigo); border:1px solid rgba(45,110,58,0.3); }
+  .m-grammar .label { color:var(--mod-grammar); border:1px solid rgba(139,110,46,0.3); }
+  .m-combi .label { color:var(--mod-combi); border:1px solid rgba(90,58,122,0.3); }
+  .m-header h1 { font-family: 'Yu Mincho', serif; font-size:1.6rem; font-weight:700; line-height:1.5; }
+  .m-read .m-header h1 { color:#2d3a6e; }
+  .m-kanji .m-header h1 { color:var(--mod-kanji); }
+  .m-gairaigo .m-header h1 { color:var(--mod-gairaigo); }
+  .m-grammar .m-header h1 { color:var(--mod-grammar); }
+  .m-combi .m-header h1 { color:var(--mod-combi); }
+  .m-header .subtitle { font-size:0.82rem; color:var(--ink-light); margin-top:4px; }
+  .q-card {
+    background:var(--paper); border:1px solid var(--divider);
+    border-radius:var(--radius); padding:24px 20px; margin-bottom:20px;
+    box-shadow:0 2px 12px rgba(0,0,0,0.05); transition: all var(--transition);
+  }
+  .q-card.correct { border-color:rgba(45,110,74,0.3); background:linear-gradient(135deg,#fefef9,#edf7f0); }
+  .q-card.wrong { border-color:rgba(193,59,42,0.25); background:linear-gradient(135deg,#fefef9,#fdf0ed); }
+  .q-card.partial { border-color:rgba(139,122,46,0.3); background:linear-gradient(135deg,#fefef9,#fdf9e8); }
+  .q-num-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .q-num {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:26px; height:26px; border-radius:50%; color:#fff; font-size:0.7rem; font-weight:700;
+  }
+  .m-read .q-num { background:var(--mod-read); }
+  .m-kanji .q-num { background:var(--mod-kanji); }
+  .m-gairaigo .q-num { background:var(--mod-gairaigo); }
+  .m-grammar .q-num { background:var(--mod-grammar); }
+  .m-combi .q-num { background:var(--mod-combi); }
+  .q-badge {
+    font-size:0.66rem;
+    color:var(--ink-light);
+    background:#f5f2ea;
+    padding:2px 8px;
+    border-radius:4px;
+    max-width:120px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .q-stem { font-size:1.02rem; font-weight:500; line-height:2; margin-bottom:4px; }
+  .q-stem .hl { color:var(--mod-read); border-bottom:2px dashed rgba(193,59,42,0.5); font-weight:700; }
+  .m-kanji .q-stem .hl { color:var(--mod-kanji); border-color:rgba(45,74,122,0.5); }
+  .m-gairaigo .q-stem .hl { color:var(--mod-gairaigo); border-color:rgba(45,110,58,0.5); }
+  .m-grammar .q-stem .hl { color:var(--mod-grammar); border-color:rgba(139,110,46,0.5); }
+  .q-prompt { font-size:0.78rem; color:var(--ink-light); margin-bottom:12px; font-style:italic; }
+  .opts { display:flex; flex-direction:column; gap:7px; list-style:none; }
+  .opt-btn {
+    display:flex; align-items:center; gap:10px; width:100%; padding:11px 14px;
+    border:1.5px solid var(--divider); border-radius:8px; background:#fefef9;
+    cursor:pointer; font-size:0.92rem; text-align:left; transition: all var(--transition);
+  }
+  .opt-btn:hover:not(:disabled) { border-color:#7a8aae; background:rgba(45,58,110,0.03); transform:translateX(2px); }
+  .opt-btn:disabled { cursor:default; }
+  .opt-marker {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:24px; height:24px; border-radius:50%; border:1.5px solid var(--divider);
+    font-size:0.68rem; font-weight:700; color:var(--ink-light); flex-shrink:0;
+  }
+  .opt-btn.correct-pick { border-color:#2d6e4a !important; background:#edf7f0 !important; }
+  .opt-btn.correct-pick .opt-marker { background:#2d6e4a; border-color:#2d6e4a; color:#fff; }
+  .opt-btn.wrong-pick { border-color:#c13b2a !important; background:#fdf0ed !important; animation:shake 0.4s; }
+  .opt-btn.wrong-pick .opt-marker { background:#c13b2a; border-color:#c13b2a; color:#fff; }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)} 20%{transform:translateX(-4px)} 40%{transform:translateX(4px)} 60%{transform:translateX(-2px)} 80%{transform:translateX(2px)}
+  }
+  .input-row { display:flex; gap:6px; align-items:center; }
+  .answer-input {
+    flex:1; padding:9px 12px; border:1.5px solid var(--divider);
+    border-radius:8px; font-size:0.92rem; background:#fff; outline:none;
+  }
+  .answer-input:focus { border-color:var(--mod-gairaigo); box-shadow:0 0 0 3px rgba(45,110,58,0.08); }
+  .answer-input:disabled { background:#f8f8f5; }
+  .check-btn {
+    padding:9px 14px; background:var(--mod-gairaigo); color:#fff; border:none;
+    border-radius:8px; cursor:pointer; font-size:0.8rem; font-weight:600; white-space:nowrap;
+  }
+  .check-btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .feedback { margin-top:8px; font-size:0.8rem; font-weight:600; }
+  .feedback.ok { color:#2d6e4a; }
+  .feedback.ng { color:#c13b2a; }
+  .score-summary { position:sticky; bottom:14px; z-index:90; max-width:860px; margin:0 auto; padding:0 16px; }
+  .score-bar {
+    background:var(--paper); border:1px solid var(--divider); border-radius:var(--radius);
+    padding:12px 20px; display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 4px 18px rgba(0,0,0,0.10); flex-wrap:wrap; gap:8px;
+  }
+  .score-bar .st { font-weight:700; font-size:0.95rem; }
+  .score-bar .sv { font-weight:800; font-size:1.15rem; }
+  .reset-btn-group {
+    display:flex;
+    gap:8px;
+  }
+  .reset-btn {
+    padding:7px 12px; border:1.5px solid var(--ink-light); background:transparent;
+    border-radius:8px; cursor:pointer; font-size:0.75rem; font-weight:600;
+  }
+  .reset-btn.full {
+    border-color:#c13b2a;
+    color:#c13b2a;
+  }
+  .reset-btn.partial {
+    border-color:#2d4a7a;
+    color:#2d4a7a;
+  }
+  .reset-btn:hover { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .result-panel { text-align:center; padding:36px 16px; display:none; }
+  .result-panel.show { display:block; }
+  .result-panel .big-score { font-family:'Yu Mincho',serif; font-size:3.2rem; font-weight:900; }
+  .result-panel .big-score span { font-size:1.6rem; opacity:0.6; }
+  .result-panel .grade { font-size:0.95rem; color:var(--ink-light); margin:6px 0 18px; }
+  .result-panel .review-btn {
+    display:inline-block; padding:10px 24px; background:#2d3a6e; color:#fff;
+    border:none; border-radius:10px; cursor:pointer; font-size:0.85rem; font-weight:600;
+  }
+  .gai-quick-bar {
+    display:flex; align-items:center; gap:8px; padding:8px 14px; margin-bottom:18px;
+    background:rgba(253,254,251,0.92); backdrop-filter:blur(10px);
+    border:1px solid var(--divider); border-radius:10px; flex-wrap:wrap;
+  }
+  .gai-quick-bar .submit-all-btn {
+    padding:7px 16px; background:var(--mod-gairaigo); color:#fff; border:none;
+    border-radius:8px; cursor:pointer; font-weight:600; font-size:0.82rem;
+  }
+  .gai-quick-bar .reveal-all-btn {
+    padding:7px 16px; background:transparent; border:1.5px solid var(--divider);
+    border-radius:8px; cursor:pointer; color:var(--ink-light); font-size:0.82rem;
+  }
+  .gai-quick-score { margin-left:auto; font-weight:600; color:var(--mod-gairaigo); }
+  .footer { text-align:center; padding:28px 16px; font-size:0.7rem; color:#bfb9a8; }
+  @media (max-width:600px) {
+    .tab-btn { padding:8px 10px; font-size:0.72rem; }
+    .q-card { padding:16px 12px; }
+    .q-stem { font-size:0.92rem; }
+    .opt-btn { padding:9px 10px; font-size:0.87rem; }
+    .score-bar { justify-content:center; }
+    .reset-btn-group { width:100%; justify-content:center; }
+  }
+  .random-toggle {
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:0.85rem;
+    color:var(--ink-light);
+  }
+  .random-toggle input[type="checkbox"] {
+    width:18px;
+    height:18px;
+    accent-color:#2d3a7a;
+    cursor:pointer;
+  }
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <div class="brand">大学日本語<span style="color:var(--mod-read)">Ⅲ</span> · 期末復習クイズ</div>
+  <div class="progress-pill">
+    <span id="progText">0 / 0</span>
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="progBar" style="width:0%"></div></div>
+  </div>
+</div>
+<nav class="tab-nav" id="tabNav">
+  <button class="tab-btn active" data-mod="read" onclick="switchModule('read')">📖 単語読み方</button>
+  <button class="tab-btn" data-mod="kanji" onclick="switchModule('kanji')">✍️ 漢字書き取り</button>
+  <button class="tab-btn" data-mod="gairaigo" onclick="switchModule('gairaigo')">🌐 外来語翻訳</button>
+  <button class="tab-btn" data-mod="grammar" onclick="switchModule('grammar')">📝 文法選択</button>
+  <button class="tab-btn" data-mod="combi" onclick="switchModule('combi')">🧩 総合テスト</button>
+</nav>
+
+<!-- 题量设置面板 -->
+<div id="countPanelContainer">
+  <div class="count-set-panel">
+    <div class="title">各モジュール出題数設定（総合テストにも反映）</div>
+    <div class="count-item">
+      <label>単語読み</label>
+      <input type="number" id="cntRead" min="1" max="63" value="15">
+    </div>
+    <div class="count-item">
+      <label>漢字</label>
+      <input type="number" id="cntKanji" min="1" max="55" value="10">
+    </div>
+    <div class="count-item">
+      <label>外来語</label>
+      <input type="number" id="cntGai" min="1" max="65" value="10">
+    </div>
+    <div class="count-item">
+      <label>文法</label>
+      <input type="number" id="cntGram" min="1" max="120" value="20">
+    </div>
+    <button class="apply-count-btn" onclick="applyCustomCount()">適用</button>
+    <!-- 选项随机开关（取消注释可启用） -->
+    <!--
+    <div class="random-toggle">
+      <input type="checkbox" id="randomizeOptions" checked onchange="toggleRandomize()">
+      <label for="randomizeOptions">選択肢をランダムに並べる</label>
+    </div>
+    -->
+  </div>
+</div>
+
+<!-- 动态题目渲染容器 -->
+<div class="main-container" id="mainContainer"></div>
+
+<div class="score-summary" id="scoreSummary">
+  <div class="score-bar">
+    <span class="st">得点 <span class="sv" id="scoreValue">0</span> / <span id="scoreTotal">0</span></span>
+    <span class="st">正答率 <span class="sv" id="rateValue">0%</span></span>
+    <div class="reset-btn-group">
+      <button class="reset-btn partial" onclick="resetOnlyAnswer()">解答クリア(問題そのまま)</button>
+      <button class="reset-btn full" onclick="resetCurrent()">完全リセット(問題再抽選)</button>
+    </div>
+  </div>
+</div>
+<div class="footer">大学日本語Ⅲ 期末復習教材 · 第2冊 5〜10課</div>
+
+<script>
+// ========== 完整题库数据（您之前提供的完整数据） ==========
+const RD_DATA = [{"id": 1, "word": "真っ白", "reading": "まっしろ", "sentence": "雪が降って、外は真っ白になりました。", "options": ["しんぱく", "まっしろ", "まっしろく"], "correct_index": 1}, {"id": 2, "word": "広げる", "reading": "ひろげる", "sentence": "地図を机の上に広げて、旅行の計画を立てた。", "options": ["ひろがる", "こうげる", "ひろげる"], "correct_index": 2}, {"id": 3, "word": "行事", "reading": "ぎょうじ", "sentence": "学校の年中行事として、毎年秋に運動会が開かれる。", "options": ["ぎょうじ", "こうじ", "いくじ"], "correct_index": 0}, {"id": 4, "word": "続く", "reading": "つづく", "sentence": "この暑さは来週まで続くそうだ。", "options": ["ぞくく", "そくく", "つづく"], "correct_index": 2}, {"id": 5, "word": "迷う", "reading": "まよう", "sentence": "初めての道で迷ってしまった。", "options": ["まどう", "めいう", "まよう"], "correct_index": 2}, {"id": 6, "word": "委ねる", "reading": "ゆだねる", "sentence": "最終的な判断は社長に委ねることにした。", "options": ["いにる", "まかねる", "ゆだねる"], "correct_index": 2}, {"id": 7, "word": "我に返る", "reading": "われにかえる", "sentence": "あまりの美しさに見とれていたが、友達の声で我に返った。", "options": ["がにかえる", "われにかえる", "われにかわる"], "correct_index": 1}, {"id": 8, "word": "仲直り", "reading": "なかなおり", "sentence": "喧嘩したけど、すぐに仲直りした。", "options": ["ちゅうなおり", "なかなおり", "なかちょくり"], "correct_index": 1}, {"id": 9, "word": "出会う", "reading": "であう", "sentence": "旅先で運命的な人に出会った。", "options": ["しゅつあう", "であう", "であい"], "correct_index": 1}, {"id": 10, "word": "慌てる", "reading": "あわてる", "sentence": "電車が遅れて慌ててタクシーを呼んだ。", "options": ["あわてる", "あれる", "こうてる"], "correct_index": 0}, {"id": 11, "word": "警備員", "reading": "けいびいん", "sentence": "警備員が夜のビルを見回っている。", "options": ["けいひいん", "けいびえん", "けいびいん"], "correct_index": 2}, {"id": 12, "word": "悔しい", "reading": "くやしい", "sentence": "あと一点足りなくて合格できず、とても悔しい。", "options": ["けしい", "かやしい", "くやしい"], "correct_index": 2}, {"id": 13, "word": "末永い", "reading": "すえながい", "sentence": "お二人の末永い幸せをお祈りします。", "options": ["すえながい", "まつながい", "すええい"], "correct_index": 0}, {"id": 14, "word": "募集", "reading": "ぼしゅう", "sentence": "新しいアルバイトを募集しています。", "options": ["ぼしゅ", "ぼしゅう", "もくしゅう"], "correct_index": 1}, {"id": 15, "word": "励む", "reading": "はげむ", "sentence": "試験に向けて、毎日勉強に励んでいる。", "options": ["れいむ", "はげむ", "はません"], "correct_index": 1}, {"id": 16, "word": "励み", "reading": "はげみ", "sentence": "みんなの応援が大きな励みになります。", "options": ["はげみ", "はげしみ", "れいみ"], "correct_index": 0}, {"id": 17, "word": "出入り", "reading": "でいり", "sentence": "この駐車場は自由に出入りできます。", "options": ["だしいり", "しゅつにゅうり", "でいり"], "correct_index": 2}, {"id": 18, "word": "貸す", "reading": "かす", "sentence": "友達にお金を貸したが、まだ返してもらっていない。", "options": ["かす", "たいす", "かりす"], "correct_index": 0}, {"id": 19, "word": "貧乏", "reading": "びんぼう", "sentence": "子供の頃は貧乏だったが、一生懸命働いて成功した。", "options": ["ひんぽう", "ひんぼう", "びんぼう"], "correct_index": 2}, {"id": 20, "word": "誇る", "reading": "ほこる", "sentence": "この町は美しい自然を誇っている。", "options": ["こる", "ほごる", "ほこる"], "correct_index": 2}, {"id": 21, "word": "誇り", "reading": "ほこり", "sentence": "自分の仕事に誇りを持っている。", "options": ["ほこり", "こり", "ほこしり"], "correct_index": 0}, {"id": 22, "word": "断る", "reading": "ことわる", "sentence": "せっかくの誘いだが、先約があるので断るしかない。", "options": ["ことわる", "ことやる", "だんる"], "correct_index": 0}, {"id": 23, "word": "断り", "reading": "ことわり", "sentence": "無断使用はお断りします。", "options": ["ことわりん", "ことわり", "だんり"], "correct_index": 1}, {"id": 24, "word": "怒る", "reading": "おこる", "sentence": "約束を破られて、彼はひどく怒った。", "options": ["いかる", "どる", "おこる"], "correct_index": 2}, {"id": 25, "word": "睨む", "reading": "にらむ", "sentence": "先生に睨まれて、慌てて宿題を出した。", "options": ["にげむ", "げいむ", "にらむ"], "correct_index": 2}, {"id": 26, "word": "勧める", "reading": "すすめる", "sentence": "友達にこの映画を勧めたら、とても喜ばれた。", "options": ["かんめる", "すすみる", "すすめる"], "correct_index": 2}, {"id": 27, "word": "届く", "reading": "とどく", "sentence": "注文した商品がもうすぐ届く。", "options": ["とどく", "とどむ", "かいとどく"], "correct_index": 0}, {"id": 28, "word": "任せる", "reading": "まかせる", "sentence": "このプロジェクトは君に任せるから、頑張ってほしい。", "options": ["にんせる", "まかせる", "まかれる"], "correct_index": 1}, {"id": 29, "word": "叱る", "reading": "しかる", "sentence": "嘘をついて、母親に叱られた。", "options": ["しつる", "しかく", "しかる"], "correct_index": 2}, {"id": 30, "word": "拭く", "reading": "ふく", "sentence": "テーブルの上のほこりを雑巾で拭いた。", "options": ["ふく", "しきく", "ぬぐう"], "correct_index": 0}, {"id": 31, "word": "皺", "reading": "しわ", "sentence": "アイロンをかけないと、シャツに皺が残ってしまう。", "options": ["しわ", "しゅう", "さび"], "correct_index": 0}, {"id": 32, "word": "膨らむ", "reading": "ふくらむ", "sentence": "パンがオーブンの中で大きく膨らんだ。", "options": ["ふくむ", "ぼうらむ", "ふくらむ"], "correct_index": 2}, {"id": 33, "word": "息", "reading": "いき", "sentence": "疲れて息が切れてしまった。", "options": ["いぶき", "いき", "そく"], "correct_index": 1}, {"id": 34, "word": "無理", "reading": "むり", "sentence": "それは無理な注文だと思う。", "options": ["むり", "むうり", "ぶり"], "correct_index": 0}, {"id": 35, "word": "勝手", "reading": "かって", "sentence": "勝手に人のものを使わないでください。", "options": ["しょうしゅ", "かって", "かちて"], "correct_index": 1}, {"id": 36, "word": "楽器", "reading": "がっき", "sentence": "彼はピアノやギターなど、いろんな楽器が演奏できる。", "options": ["がっき", "がくうつわ", "らくき"], "correct_index": 0}, {"id": 37, "word": "負ける", "reading": "まける", "sentence": "試合に負けたけど、最後まで諦めなかった。", "options": ["ふける", "まける", "まいる"], "correct_index": 1}, {"id": 38, "word": "思い込む", "reading": "おもいこむ", "sentence": "彼は自分が正しいと思い込んでいる。", "options": ["おもいこむ", "しいこむ", "おもごむ"], "correct_index": 0}, {"id": 39, "word": "触れる", "reading": "ふれる", "sentence": "この絵に触れるとアラームが鳴ります。", "options": ["ふれる", "さわれる", "しょくれる"], "correct_index": 0}, {"id": 40, "word": "上達", "reading": "じょうたつ", "sentence": "毎日練習したおかげで、日本語がかなり上達した。", "options": ["うえたつ", "じょうたつ", "じょうだち"], "correct_index": 1}, {"id": 41, "word": "幸せ", "reading": "しあわせ", "sentence": "家族と一緒に過ごす時間が一番幸せだ。", "options": ["しやわせ", "しあわせ", "こうせ"], "correct_index": 1}, {"id": 42, "word": "刺さる", "reading": "ささる", "sentence": "指に小さなトゲが刺さって痛い。", "options": ["さっさる", "しさる", "ささる"], "correct_index": 2}, {"id": 43, "word": "才能", "reading": "さいのう", "sentence": "彼女は音楽の才能に恵まれている。", "options": ["さいの", "さいしょう", "さいのう"], "correct_index": 2}, {"id": 44, "word": "安易", "reading": "あんい", "sentence": "安易な考えで起業すると失敗するかもしれない。", "options": ["あんやく", "あんい", "あんえき"], "correct_index": 1}, {"id": 45, "word": "田舎", "reading": "いなか", "sentence": "夏休みは田舎のおばあちゃんの家に行った。", "options": ["でんしゃ", "いなか", "いえか"], "correct_index": 1}, {"id": 46, "word": "離れる", "reading": "はなれる", "sentence": "故郷を離れて、一人で都会で暮らしている。", "options": ["はなる", "りれる", "はなれる"], "correct_index": 2}, {"id": 47, "word": "輝く", "reading": "かがやく", "sentence": "夜空に星が輝いている。", "options": ["きく", "かがやく", "かかやく"], "correct_index": 1}, {"id": 48, "word": "高齢", "reading": "こうれい", "sentence": "高齢の両親を介護するために帰郷した。", "options": ["たかれい", "こうれい", "こうれ"], "correct_index": 1}, {"id": 49, "word": "里帰り", "reading": "さとがえり", "sentence": "出産後、初めての里帰りを楽しみにしている。", "options": ["りかえり", "さとがえり", "さとかえり"], "correct_index": 1}, {"id": 50, "word": "慣れ親しむ", "reading": "なれしたしむ", "sentence": "長年慣れ親しんだこの町を離れるのは寂しい。", "options": ["なれしたしむ", "なれおやしむ", "かんしんしむ"], "correct_index": 0}, {"id": 51, "word": "面倒", "reading": "めんどう", "sentence": "引越しの手続きが面倒で困っている。", "options": ["めんとう", "おもてとう", "めんどう"], "correct_index": 2}, {"id": 52, "word": "心地よい", "reading": "ここちよい", "sentence": "この部屋は日当たりがよく、とても心地よい。", "options": ["ここちよい", "しんちよい", "こころちよい"], "correct_index": 0}, {"id": 53, "word": "共働き", "reading": "ともばたらき", "sentence": "共働きの家庭が増えている。", "options": ["ともはたらき", "きょうどうき", "ともばたらき"], "correct_index": 2}, {"id": 54, "word": "加える", "reading": "くわえる", "sentence": "味が薄いので、もう少し塩を加えてください。", "options": ["くわえる", "くわわる", "かえる"], "correct_index": 0}, {"id": 55, "word": "向き合う", "reading": "むきあう", "sentence": "自分の弱点と真剣に向き合うことが大切だ。", "options": ["こうきあう", "むきごう", "むきあう"], "correct_index": 2}, {"id": 56, "word": "余る", "reading": "あまる", "sentence": "料理を作りすぎて、食べきれずに余ってしまった。", "options": ["あまえる", "あまる", "よる"], "correct_index": 1}, {"id": 57, "word": "寿命", "reading": "じゅみょう", "sentence": "この電化製品の寿命はだいたい5年くらいだ。", "options": ["じゅめい", "じゅみょう", "すみょう"], "correct_index": 1}, {"id": 58, "word": "務める", "reading": "つとめる", "sentence": "兄は大手商社の社長を務めている。", "options": ["むめる", "つとまる", "つとめる"], "correct_index": 2}, {"id": 59, "word": "発見", "reading": "はっけん", "sentence": "探検隊が新しい洞窟を発見した。", "options": ["ほっけん", "はっみ", "はっけん"], "correct_index": 2}, {"id": 60, "word": "戦う", "reading": "たたかう", "sentence": "困難に負けずに戦う勇気がほしい。", "options": ["せんう", "いくさう", "たたかう"], "correct_index": 2}, {"id": 61, "word": "辿る", "reading": "たどる", "sentence": "昔の写真を見ながら、これまでの人生を辿ってみた。", "options": ["たどる", "てんる", "たどく"], "correct_index": 0}, {"id": 62, "word": "延びる", "reading": "のびる", "sentence": "会議が一時間以上延びてしまった。", "options": ["のびる", "のびいる", "えんびる"], "correct_index": 0}, {"id": 63, "word": "老いる", "reading": "おいる", "sentence": "老いても学ぶことをやめたくない。", "options": ["ろういる", "おいる", "ふいる"], "correct_index": 1}];
+const KJ_DATA = [{"id": 1, "kana": "むかう", "kanji": "向かう", "options": ["迎かう", "向う", "向かう"], "correct_index": 2}, {"id": 2, "kana": "できごと", "kanji": "出来事", "options": ["出来ごと", "出耒事", "出来事"], "correct_index": 2}, {"id": 3, "kana": "つたえる", "kanji": "伝える", "options": ["雲える", "伝える", "伝わる"], "correct_index": 1}, {"id": 4, "kana": "まぶしい", "kanji": "眩しい", "options": ["玄しい", "眩しい", "目玄しい"], "correct_index": 1}, {"id": 5, "kana": "ひかえめ", "kanji": "控え目", "options": ["控え日", "控え眼", "控え目"], "correct_index": 2}, {"id": 6, "kana": "にがて", "kanji": "苦手", "options": ["苦手", "若手", "苦て"], "correct_index": 0}, {"id": 7, "kana": "かたむける", "kanji": "傾ける", "options": ["傾る", "傾ける", "頃ける"], "correct_index": 1}, {"id": 8, "kana": "はずかしい", "kanji": "恥ずかしい", "options": ["恥ずかしい", "耳ずかしい", "聴ずかしい"], "correct_index": 0}, {"id": 9, "kana": "みまわす", "kanji": "見回す", "options": ["見回す", "見廻す", "見回る"], "correct_index": 0}, {"id": 10, "kana": "おどろく", "kanji": "驚く", "options": ["驚かす", "驚く", "敬く"], "correct_index": 1}, {"id": 11, "kana": "じつは", "kanji": "実は", "options": ["実は", "美は", "実わ"], "correct_index": 0}, {"id": 12, "kana": "べんがく", "kanji": "勉学", "options": ["勉がく", "勉学", "勉強"], "correct_index": 1}, {"id": 13, "kana": "さる", "kanji": "去る", "options": ["法る", "去ねる", "去る"], "correct_index": 2}, {"id": 14, "kana": "たつ", "kanji": "経つ", "options": ["経つ", "経る", "軽つ"], "correct_index": 0}, {"id": 15, "kana": "ゆるがす", "kanji": "揺るがす", "options": ["揺るぐ", "揺す", "揺るがす"], "correct_index": 2}, {"id": 16, "kana": "からだをはる", "kanji": "体を張る", "options": ["体を張る", "体を張す", "体を貼る"], "correct_index": 0}, {"id": 17, "kana": "ことわりかた", "kanji": "断り方", "options": ["断方", "断り方", "断り型"], "correct_index": 1}, {"id": 18, "kana": "ばってき", "kanji": "抜擢", "options": ["抜擢", "技擢", "抜てき"], "correct_index": 0}, {"id": 19, "kana": "なっとく", "kanji": "納得", "options": ["内得", "納得", "納とく"], "correct_index": 1}, {"id": 20, "kana": "みをむすぶ", "kanji": "実を結ぶ", "options": ["実を結果", "実を結す", "実を結ぶ"], "correct_index": 2}, {"id": 21, "kana": "もうしでる", "kanji": "申し出る", "options": ["申し出", "申出る", "申し出る"], "correct_index": 2}, {"id": 22, "kana": "おちつく", "kanji": "落ち着く", "options": ["落ち付く", "落ち着く", "落着く"], "correct_index": 1}, {"id": 23, "kana": "たまる", "kanji": "溜まる", "options": ["溜る", "溜まる", "留まる"], "correct_index": 1}, {"id": 24, "kana": "とどく", "kanji": "届く", "options": ["屈く", "届く", "届ける"], "correct_index": 1}, {"id": 25, "kana": "はきけ", "kanji": "吐き気", "options": ["吐き気分", "吐き気", "叶き気"], "correct_index": 1}, {"id": 26, "kana": "はねる", "kanji": "跳ねる", "options": ["跳る", "跳ねる", "跳ぶ"], "correct_index": 1}, {"id": 27, "kana": "しかる", "kanji": "叱る", "options": ["叱つ", "叱る", "叱かす"], "correct_index": 1}, {"id": 28, "kana": "さいわい", "kanji": "幸い", "options": ["辛い", "幸せ", "幸い"], "correct_index": 2}, {"id": 29, "kana": "ひま", "kanji": "暇", "options": ["暇", "眼", "遐"], "correct_index": 0}, {"id": 30, "kana": "ほめる", "kanji": "褒める", "options": ["褒める", "保める", "褒る"], "correct_index": 0}, {"id": 31, "kana": "じゅぎょう", "kanji": "授業", "options": ["授ぎょう", "授業", "受業"], "correct_index": 1}, {"id": 32, "kana": "おんがく", "kanji": "音楽", "options": ["音がく", "音楽", "楽音"], "correct_index": 1}, {"id": 33, "kana": "ふしぎ", "kanji": "不思議", "options": ["不思義", "不議", "不思議"], "correct_index": 2}, {"id": 34, "kana": "こころぐるしい", "kanji": "心苦しい", "options": ["辛苦しい", "心苦い", "心苦しい"], "correct_index": 2}, {"id": 35, "kana": "れんしゅう", "kanji": "練習", "options": ["煉習", "練しゅう", "練習"], "correct_index": 2}, {"id": 36, "kana": "つきそう", "kanji": "付き添う", "options": ["付き添う", "付添う", "付き沿う"], "correct_index": 0}, {"id": 37, "kana": "ならう", "kanji": "習う", "options": ["習う", "羽う", "習る"], "correct_index": 0}, {"id": 38, "kana": "きょうそう", "kanji": "競争", "options": ["競争", "競そう", "競走"], "correct_index": 0}, {"id": 39, "kana": "うながす", "kanji": "促す", "options": ["足す", "促る", "促す"], "correct_index": 2}, {"id": 40, "kana": "るすばん", "kanji": "留守番", "options": ["留守番", "留守版", "留る番"], "correct_index": 0}, {"id": 41, "kana": "けつだん", "kanji": "決断", "options": ["断決", "決だん", "決断"], "correct_index": 2}, {"id": 42, "kana": "くらす", "kanji": "暮らす", "options": ["暮す", "暮らす", "墓らす"], "correct_index": 1}, {"id": 43, "kana": "つれる", "kanji": "連れる", "options": ["運れる", "連れる", "連る"], "correct_index": 1}, {"id": 44, "kana": "こうれい", "kanji": "高齢", "options": ["高令", "高れい", "高齢"], "correct_index": 2}, {"id": 45, "kana": "おやこうこう", "kanji": "親孝行", "options": ["親孝行", "新孝行", "親考行"], "correct_index": 0}, {"id": 46, "kana": "ほまれ", "kanji": "誉れ", "options": ["挙れ", "誉め", "誉れ"], "correct_index": 2}, {"id": 47, "kana": "ながす", "kanji": "流す", "options": ["流る", "琉す", "流す"], "correct_index": 2}, {"id": 48, "kana": "くいる", "kanji": "悔いる", "options": ["毎いる", "悔いる", "悔る"], "correct_index": 1}, {"id": 49, "kana": "むだ", "kanji": "無駄", "options": ["無駄", "無だ", "蒸駄"], "correct_index": 0}, {"id": 50, "kana": "すなお", "kanji": "素直", "options": ["索直", "素なお", "素直"], "correct_index": 2}, {"id": 51, "kana": "こめる", "kanji": "込める", "options": ["込める", "辻める", "込む"], "correct_index": 0}, {"id": 52, "kana": "はっけんする", "kanji": "発見する", "options": ["発見", "発見する", "発けんする"], "correct_index": 1}, {"id": 53, "kana": "おとろえる", "kanji": "衰える", "options": ["哀える", "衰る", "衰える"], "correct_index": 2}, {"id": 54, "kana": "かさねる", "kanji": "重ねる", "options": ["動ねる", "重る", "重ねる"], "correct_index": 2}, {"id": 55, "kana": "えがく", "kanji": "描く", "options": ["猫く", "描く", "描がく"], "correct_index": 1}];
+const GG_DATA = [{"id": 1, "word": "イベント", "meaning": "活动，集会", "accept": ["活动", "集会"]}, {"id": 2, "word": "デリバリー", "meaning": "外卖，递送", "accept": ["外卖", "递送"]}, {"id": 3, "word": "ストーリー", "meaning": "故事", "accept": ["故事"]}, {"id": 4, "word": "タイプ", "meaning": "类型", "accept": ["类型"]}, {"id": 5, "word": "アルバイト", "meaning": "打工", "accept": ["打工"]}, {"id": 6, "word": "エピソード", "meaning": "轶事，趣事", "accept": ["趣事", "轶事"]}, {"id": 7, "word": "ゼミ", "meaning": "专题研讨课", "accept": ["专题研讨课"]}, {"id": 8, "word": "スマホ", "meaning": "智能手机", "accept": ["智能手机"]}, {"id": 9, "word": "トマト", "meaning": "番茄", "accept": ["番茄"]}, {"id": 10, "word": "ショック", "meaning": "打击，冲击", "accept": ["打击", "冲击"]}, {"id": 11, "word": "キャンパス", "meaning": "大学校园", "accept": ["大学校园"]}, {"id": 12, "word": "コース", "meaning": "课程，学科，路线", "accept": ["课程", "学科", "路线"]}, {"id": 13, "word": "オファー", "meaning": "录用通知，邀请", "accept": ["邀请", "录用通知"]}, {"id": 14, "word": "ゴールデンウィーク", "meaning": "黄金周", "accept": ["黄金周"]}, {"id": 15, "word": "チェック", "meaning": "检验，核对", "accept": ["检验", "核对"]}, {"id": 16, "word": "カード", "meaning": "卡片", "accept": ["卡片"]}, {"id": 17, "word": "ドイツ", "meaning": "德国", "accept": ["德国"]}, {"id": 18, "word": "ビッグニュース", "meaning": "特大新闻", "accept": ["特大新闻"]}, {"id": 19, "word": "ルール", "meaning": "规则", "accept": ["规则"]}, {"id": 20, "word": "レストラン", "meaning": "餐厅", "accept": ["餐厅"]}, {"id": 21, "word": "シンク", "meaning": "水槽", "accept": ["水槽"]}, {"id": 22, "word": "スーパー", "meaning": "超市", "accept": ["超市"]}, {"id": 23, "word": "メッセージ", "meaning": "口信，消息", "accept": ["口信", "消息"]}, {"id": 24, "word": "コーチ", "meaning": "教练", "accept": ["教练"]}, {"id": 25, "word": "フローリング", "meaning": "木质地板", "accept": ["木质地板"]}, {"id": 26, "word": "レシピ", "meaning": "食谱", "accept": ["食谱"]}, {"id": 27, "word": "ピーマン", "meaning": "青椒", "accept": ["青椒"]}, {"id": 28, "word": "コンビニ", "meaning": "便利店", "accept": ["便利店"]}, {"id": 29, "word": "プロデューサー", "meaning": "制片人", "accept": ["制片人"]}, {"id": 30, "word": "ケア", "meaning": "关怀，照顾", "accept": ["关怀", "照顾"]}, {"id": 31, "word": "ダンス", "meaning": "舞蹈", "accept": ["舞蹈"]}, {"id": 32, "word": "ピアノ", "meaning": "钢琴", "accept": ["钢琴"]}, {"id": 33, "word": "セリフ", "meaning": "台词", "accept": ["台词"]}, {"id": 34, "word": "ギター", "meaning": "吉他", "accept": ["吉他"]}, {"id": 35, "word": "バスケットボール", "meaning": "篮球", "accept": ["篮球"]}, {"id": 36, "word": "バスケ", "meaning": "篮球（简称）", "accept": ["篮球", "篮球（简称）"]}, {"id": 37, "word": "サークル", "meaning": "社团", "accept": ["社团"]}, {"id": 38, "word": "バイオリン", "meaning": "小提琴", "accept": ["小提琴"]}, {"id": 39, "word": "サックス", "meaning": "萨克斯", "accept": ["萨克斯"]}, {"id": 40, "word": "テスト", "meaning": "考试，测试", "accept": ["测试", "考试"]}, {"id": 41, "word": "コンピューター", "meaning": "电脑", "accept": ["电脑"]}, {"id": 42, "word": "パソコン", "meaning": "个人电脑", "accept": ["个人电脑"]}, {"id": 43, "word": "コミュニティー", "meaning": "社区，共同体", "accept": ["共同体", "社区"]}, {"id": 44, "word": "ストレス", "meaning": "精神压力", "accept": ["精神压力"]}, {"id": 45, "word": "プレッシャー", "meaning": "压力", "accept": ["压力"]}, {"id": 46, "word": "スーツ", "meaning": "成套西装", "accept": ["成套西装"]}, {"id": 47, "word": "ハイテク", "meaning": "高科技", "accept": ["高科技"]}, {"id": 48, "word": "ハイテクノロジー", "meaning": "高科技", "accept": ["高科技"]}, {"id": 49, "word": "コンサート", "meaning": "音乐会", "accept": ["音乐会"]}, {"id": 50, "word": "ラッシュ", "meaning": "高峰时间", "accept": ["高峰时间"]}, {"id": 51, "word": "ラッシュアワー", "meaning": "高峰时间", "accept": ["高峰时间"]}, {"id": 52, "word": "リラックス", "meaning": "放松，轻松", "accept": ["放松", "轻松"]}, {"id": 53, "word": "ダメージ", "meaning": "损坏，破坏", "accept": ["损坏", "破坏"]}, {"id": 54, "word": "ドライブ", "meaning": "开车兜风", "accept": ["开车兜风"]}, {"id": 55, "word": "キャッシュレス", "meaning": "无现金", "accept": ["无现金"]}, {"id": 56, "word": "ビタミン", "meaning": "维生素", "accept": ["维生素"]}, {"id": 57, "word": "エンジニア", "meaning": "工程师", "accept": ["工程师"]}, {"id": 58, "word": "ストップ", "meaning": "停止，中止", "accept": ["停止", "中止"]}, {"id": 59, "word": "ビジネス", "meaning": "商务", "accept": ["商务"]}, {"id": 60, "word": "バランス", "meaning": "平衡", "accept": ["平衡"]}, {"id": 61, "word": "テーマ", "meaning": "主题，题目", "accept": ["主题", "题目"]}, {"id": 62, "word": "メール", "meaning": "邮件", "accept": ["邮件"]}, {"id": 63, "word": "ボランティア", "meaning": "志愿者", "accept": ["志愿者"]}, {"id": 64, "word": "イメージ", "meaning": "形象，印象", "accept": ["形象", "印象"]}, {"id": 65, "word": "モデル", "meaning": "行动规范，范本", "accept": ["范本", "行动规范"]}];
+const GR_DATA = [{"id": 1, "qnum": 31, "stem": "旅行に行った際の( )をお聞かせください。", "options": ["エピソード", "エピローグ", "アピール", "アップル"], "answer": "A", "answer_idx": 0}, {"id": 2, "qnum": 32, "stem": "お母さんは子どもが目を覚まさないように( )部屋を出た。", "options": ["きっと", "そっと", "ぱっと", "じっと"], "answer": "B", "answer_idx": 1}, {"id": 3, "qnum": 33, "stem": "大学生なのに、こんな簡単な計算( )できない。", "options": ["こそ", "だけ", "さえ", "まで"], "answer": "C", "answer_idx": 2}, {"id": 4, "qnum": 34, "stem": "彼女は年の( )若く見える。", "options": ["相応に", "わりには", "おかげで", "なりに"], "answer": "B", "answer_idx": 1}, {"id": 5, "qnum": 35, "stem": "この辺りは夜になると暗くなるから、油断( )。", "options": ["してもいい", "してはならない", "しておいたほうがいい", "しなくちゃならない"], "answer": "B", "answer_idx": 1}, {"id": 6, "qnum": 36, "stem": "父からもらったボールペンは( )から、大好きです。", "options": ["書きたい", "書き続ける", "書きやすい", "書きにくい"], "answer": "C", "answer_idx": 2}, {"id": 7, "qnum": 37, "stem": "あの二人は( )、もう3年になります。", "options": ["かけて", "はなして", "つきあって", "ほめあって"], "answer": "C", "answer_idx": 2}, {"id": 8, "qnum": 38, "stem": "入社し( )の頃は、先輩たちにいろいろお世話になりました。", "options": ["たばかり", "てばかりいる", "てまもない", "時"], "answer": "A", "answer_idx": 0}, {"id": 9, "qnum": 39, "stem": "大学を出て( )、社会の厳しさを知った。", "options": ["はじめて", "おきながら", "じゃないと", "じゃなければ"], "answer": "A", "answer_idx": 0}, {"id": 10, "qnum": 40, "stem": "おいし( )料理ですね。誰が作ったの？", "options": ["そう", "そうの", "そうな", "そうに"], "answer": "C", "answer_idx": 2}, {"id": 11, "qnum": 41, "stem": "子どもに喜んでもらうためにおもちゃを買うのは( )ので、甘やかしてはいけない。", "options": ["限りがない", "なさけない", "目がない", "きりがない"], "answer": "D", "answer_idx": 3}, {"id": 12, "qnum": 42, "stem": "日本へ留学に行く( )迷っている。", "options": ["かな", "かと", "やら", "かどうか"], "answer": "D", "answer_idx": 3}, {"id": 13, "qnum": 43, "stem": "心配事が原因で勉強に( )ときは、誰かに相談したり、未来のことを気にしないように気持ちをコントロールしたりするとよいでしょう。", "options": ["手が空かない", "手が届かない", "手が付かない", "手がかからない"], "answer": "C", "answer_idx": 2}, {"id": 14, "qnum": 44, "stem": "勇気を出して、好きな人に( )を聞いた。", "options": ["電話先", "売り先", "取引き先", "連絡先"], "answer": "D", "answer_idx": 3}, {"id": 15, "qnum": 45, "stem": "プロジェクトを実施する前に、住民たちの意見に( )。", "options": ["口をふさいだ", "足を運んだ", "耳を傾けた", "首を傾けた"], "answer": "C", "answer_idx": 2}, {"id": 16, "qnum": 46, "stem": "その有名な遊園地でお正月( )が開催されることが発表された。", "options": ["コメント", "セメント", "フレンド", "イベント"], "answer": "D", "answer_idx": 3}, {"id": 17, "qnum": 47, "stem": "明日、友達と食事の( )をした。", "options": ["約束", "お願い", "祈り", "見合い"], "answer": "A", "answer_idx": 0}, {"id": 18, "qnum": 48, "stem": "子ども( )できることが大人の私ができないのは、恥ずかしい。", "options": ["しか", "だから", "だけが", "さえ"], "answer": "D", "answer_idx": 3}, {"id": 19, "qnum": 49, "stem": "田中先生の( )、大学に合格した。", "options": ["せいで", "おかげで", "ことで", "さまで"], "answer": "B", "answer_idx": 1}, {"id": 20, "qnum": 50, "stem": "大好きなアニメの劇場版は明日上映されるから、見たくて( )。", "options": ["もいい", "はならない", "しょうがない", "いけない"], "answer": "C", "answer_idx": 2}, {"id": 21, "qnum": 31, "stem": "社長が会議室で( )ですから、急ぎましょう。", "options": ["待ち", "待って", "待たれ", "お待ち"], "answer": "D", "answer_idx": 3}, {"id": 22, "qnum": 32, "stem": "これは山本教授が( )本です。", "options": ["お書きになった", "お書かれた", "お書きにした", "お書きにする"], "answer": "A", "answer_idx": 0}, {"id": 23, "qnum": 33, "stem": "お母さんは息子を日本に( )。", "options": ["留学されます", "留学します", "留学してあげます", "留学させます"], "answer": "D", "answer_idx": 3}, {"id": 24, "qnum": 34, "stem": "1年間をかけて書いてきた卒業論文を、今日( )書き上げた。", "options": ["いつか", "ついに", "いつ", "つい"], "answer": "B", "answer_idx": 1}, {"id": 25, "qnum": 35, "stem": "伊藤：何かご用でしょうか。 李：( )、今日は伊藤さんにお願いしたいことがあります。", "options": ["つまり", "実は", "まあ", "なんと"], "answer": "B", "answer_idx": 1}, {"id": 26, "qnum": 36, "stem": "私たちのグループのために、田さんは( )を張って頑張ってくれています。", "options": ["力", "頭", "首", "体"], "answer": "D", "answer_idx": 3}, {"id": 27, "qnum": 37, "stem": "寮を出るのが遅くなったが、( )授業の開始時間には間にあった。", "options": ["なんでも", "なんだか", "なんとなく", "なんとか"], "answer": "D", "answer_idx": 3}, {"id": 28, "qnum": 38, "stem": "隣の部屋で子どもが泣いているのが( )。", "options": ["聞き取れます", "聞きます", "聞こえます", "聞かれます"], "answer": "C", "answer_idx": 2}, {"id": 29, "qnum": 39, "stem": "二人の恋はついに( )を結んで結婚しました。", "options": ["花", "糸", "印", "実"], "answer": "D", "answer_idx": 3}, {"id": 30, "qnum": 40, "stem": "「はい、東京製薬( )。」「すみません、営業一課の田中さんをお願いします。」", "options": ["である", "です", "でございます", "ございません"], "answer": "C", "answer_idx": 2}, {"id": 31, "qnum": 41, "stem": "水曜日までに、こちらから( )。", "options": ["ご連絡です", "ご連絡になります", "ご連絡します", "ご連絡でございます"], "answer": "C", "answer_idx": 2}, {"id": 32, "qnum": 42, "stem": "あのニュースは今若者の注目を( )。", "options": ["起こしている", "集めている", "片付けている", "買っている"], "answer": "B", "answer_idx": 1}, {"id": 33, "qnum": 43, "stem": "田中さんは朝から晩まで中国語の勉強に( )。", "options": ["頼っている", "励んでいる", "通っている", "注いでいる"], "answer": "B", "answer_idx": 1}, {"id": 34, "qnum": 44, "stem": "ここのルールについて( )説明してもらいました。", "options": ["ぎりぎり", "ぎっしり", "きちんと", "ピタッと"], "answer": "C", "answer_idx": 2}, {"id": 35, "qnum": 45, "stem": "アメリカの大学から、研究職の( )が届きました。", "options": ["オファー", "ピクニック", "ソファー", "キャンパス"], "answer": "A", "answer_idx": 0}, {"id": 36, "qnum": 46, "stem": "すみませんが、パスポートは( )でしょうか。", "options": ["持", "お持ち", "持って", "持たれ"], "answer": "B", "answer_idx": 1}, {"id": 37, "qnum": 47, "stem": "あの人に会った( )会った( )、挨拶できなかった。", "options": ["ことは、けど", "ものは、けど", "ことけど、は", "ものけど、は"], "answer": "A", "answer_idx": 0}, {"id": 38, "qnum": 48, "stem": "次のお客さま、こちらに( )。", "options": ["お座りです", "お座りください", "お座りします", "お座りしてください"], "answer": "B", "answer_idx": 1}, {"id": 39, "qnum": 49, "stem": "このあたりはバスがないから、駅まで( )。", "options": ["お送りになります", "お送りです", "お送りします", "お送ります"], "answer": "C", "answer_idx": 2}, {"id": 40, "qnum": 50, "stem": "李さんは午前7時に北京を出発して、さっき東京に( )そうです。", "options": ["お着きになる", "お着きになった", "お着きする", "お着きにした"], "answer": "B", "answer_idx": 1}, {"id": 41, "qnum": 31, "stem": "蛇口からポタポタと水が（ ）いる。", "options": ["すれて", "たれて", "つれて", "されて"], "answer": "B", "answer_idx": 1}, {"id": 42, "qnum": 32, "stem": "先輩はご飯をごちそうしてくれた（ ）、家まで送ってくれた。", "options": ["だけか", "せいか", "ばかりか", "のみか"], "answer": "C", "answer_idx": 2}, {"id": 43, "qnum": 33, "stem": "2年ぶりに歯医者に行ったら、虫歯だらけ（ ）。", "options": ["そうか", "なのだ", "だった", "そうだ"], "answer": "C", "answer_idx": 2}, {"id": 44, "qnum": 34, "stem": "定期券ばかりか、家の鍵（ ）忘れてしまった。", "options": ["さえ", "やら", "から", "とか"], "answer": "A", "answer_idx": 0}, {"id": 45, "qnum": 35, "stem": "弟はベッドの上で飛んだり（ ）して、母に怒られた。", "options": ["たったり", "あったり", "はねたり", "かえったり"], "answer": "C", "answer_idx": 2}, {"id": 46, "qnum": 36, "stem": "あの二人は（ ）がぴったりです。", "options": ["きぶん", "きもち", "いき", "おもい"], "answer": "C", "answer_idx": 2}, {"id": 47, "qnum": 37, "stem": "料理は下手ですが、お菓子を作ることにかけては（ ）。", "options": ["自信がある", "自信がない", "下手です", "できないはず"], "answer": "A", "answer_idx": 0}, {"id": 48, "qnum": 38, "stem": "もし新しい外国語を勉強するとしたら、中国語を（ ）。", "options": ["学んでいる", "学びたい", "学べる", "学ばせる"], "answer": "B", "answer_idx": 1}, {"id": 49, "qnum": 39, "stem": "中国に行くとしたら、どこがお（ ）ですか。", "options": ["たのしみ", "ねがい", "たすけ", "すすめ"], "answer": "D", "answer_idx": 3}, {"id": 50, "qnum": 40, "stem": "今の状況は（ ）かもしれません。", "options": ["まずい", "おいしい", "いそがしい", "ながい"], "answer": "A", "answer_idx": 0}, {"id": 51, "qnum": 41, "stem": "昨日はお酒を飲みすぎて、（ ）しまった。", "options": ["きて", "はいて", "はいって", "くるって"], "answer": "B", "answer_idx": 1}, {"id": 52, "qnum": 42, "stem": "コーヒーに牛乳を（ ）入れました。", "options": ["がっくり", "どっきり", "たっぷり", "あっさり"], "answer": "C", "answer_idx": 2}, {"id": 53, "qnum": 43, "stem": "小学生の時、机の周りはいつも（ ）だった。", "options": ["べちゃべちゃ", "ぼろぼろ", "ぐちゃぐちゃ", "しわくちゃ"], "answer": "C", "answer_idx": 2}, {"id": 54, "qnum": 44, "stem": "家ではよく唐辛子を（ ）、乾燥させます。", "options": ["さけて", "かけて", "つれて", "つるして"], "answer": "D", "answer_idx": 3}, {"id": 55, "qnum": 45, "stem": "年を取り、（ ）が目立ってきた。", "options": ["みみ", "なわ", "にわ", "しわ"], "answer": "D", "answer_idx": 3}, {"id": 56, "qnum": 46, "stem": "彼は私たちに助けを（ ）。", "options": ["おこした", "わたした", "もうしでた", "よこした"], "answer": "C", "answer_idx": 2}, {"id": 57, "qnum": 47, "stem": "家を買う（ ）、庭がある家を買いたいです！", "options": ["としたら", "と聞くと", "になれば", "になったら"], "answer": "A", "answer_idx": 0}, {"id": 58, "qnum": 48, "stem": "駅前はコンビニ（ ）で、一つ近所にも欲しいくらいだ。", "options": ["ばかり", "だらけ", "ずくめ", "のみ"], "answer": "A", "answer_idx": 0}, {"id": 59, "qnum": 49, "stem": "こんなに難しい問題は小学生に解ける（ ）。", "options": ["はずはない", "はずだ", "わけだ", "わけではない"], "answer": "A", "answer_idx": 0}, {"id": 60, "qnum": 50, "stem": "パソコンの知識にかけては、彼の右に（ ）人は（ ）。", "options": ["並ぶ、いる", "出る、いない", "並ぶ、いない", "出る、いる"], "answer": "C", "answer_idx": 2}, {"id": 61, "qnum": 31, "stem": "今日一日友達の買い物に（ ）。", "options": ["からかった", "のっかった", "向き合った", "付き合った"], "answer": "D", "answer_idx": 3}, {"id": 62, "qnum": 32, "stem": "語学力がぐんぐん（ ）人の特徴を調べてみました。", "options": ["上進する", "上手する", "上昇する", "上達する"], "answer": "D", "answer_idx": 3}, {"id": 63, "qnum": 33, "stem": "私（ ）課長（ ）パソコンの使い方を説明していただきます。", "options": ["へ、が", "が、入", "に、は", "は、に"], "answer": "D", "answer_idx": 3}, {"id": 64, "qnum": 34, "stem": "こんなにたくさんの料理を一人で（ ）。", "options": ["食べようがない", "食べられようがない", "食べられる", "食べさせられる"], "answer": "A", "answer_idx": 0}, {"id": 65, "qnum": 35, "stem": "（ ）のせいか、最近少し太った気がします。", "options": ["き", "ぎ", "きもち", "おもい"], "answer": "B", "answer_idx": 1}, {"id": 66, "qnum": 36, "stem": "開けにくい窓を（ ）開けたら、壊れてしまった。", "options": ["むりやり", "いきなり", "さしぶり", "からくり"], "answer": "A", "answer_idx": 0}, {"id": 67, "qnum": 37, "stem": "友人（ ）国家博物館（ ）案内してもらった。", "options": ["に、で", "に、を", "が、で", "が、を"], "answer": "B", "answer_idx": 1}, {"id": 68, "qnum": 38, "stem": "多くの国では、電車の中で飲食をしてはいけない（ ）。", "options": ["わけになる", "わけになっている", "ことになる", "ことになっている"], "answer": "D", "answer_idx": 3}, {"id": 69, "qnum": 39, "stem": "そのニュースを見て、私は（ ）悲しみに襲われた。", "options": ["おぼえようのない", "いいようのない", "おぼえられない", "いわれない"], "answer": "B", "answer_idx": 1}, {"id": 70, "qnum": 40, "stem": "私は無理やり父に野菜を（ ）。", "options": ["食べされる", "食べれる", "食べさせられた", "食べられる"], "answer": "C", "answer_idx": 2}, {"id": 71, "qnum": 41, "stem": "やる気がない（ ）、いつも試合に負けてしまいます。", "options": ["せいで", "なせいで", "のせいに", "なくせに"], "answer": "A", "answer_idx": 0}, {"id": 72, "qnum": 42, "stem": "両親は弟（ ）英語（ ）勉強させました。", "options": ["に、を", "から、を", "に、に", "の、を"], "answer": "A", "answer_idx": 0}, {"id": 73, "qnum": 43, "stem": "今日は休日だと（ ）いたけど、金曜日だった。", "options": ["迷い込んで", "思い込んで", "落ち込んで", "黙り込んで"], "answer": "B", "answer_idx": 1}, {"id": 74, "qnum": 44, "stem": "（ ）した文章は分かりにくくて、嫌われる。", "options": ["あっさり", "みっちり", "だらだら", "のびのび"], "answer": "C", "answer_idx": 2}, {"id": 75, "qnum": 45, "stem": "今日（ ）疲れた。", "options": ["ぐちゃぐちゃ", "めちゃくちゃ", "ぐにゃぐにゃ", "くしゃくしゃ"], "answer": "B", "answer_idx": 1}, {"id": 76, "qnum": 46, "stem": "大学受験に（ ）それで全てが終了というわけでは決してなく、ようやく新たなスタート地点に立てたということに過ぎない。", "options": ["受かったら", "上げたら", "受けたら", "上がったら"], "answer": "A", "answer_idx": 0}, {"id": 77, "qnum": 47, "stem": "そろそろ二十歳になるので、（ ）しなきゃと思っている。", "options": ["ちゃんと", "しゃんと", "きっと", "じっと"], "answer": "B", "answer_idx": 1}, {"id": 78, "qnum": 48, "stem": "ここで遊んではいけないと子どもに（ ）。", "options": ["言い合う", "言わされる", "言い伝える", "言い聞かせる"], "answer": "D", "answer_idx": 3}, {"id": 79, "qnum": 49, "stem": "佐藤さんがそこにいることに今（ ）。", "options": ["おぼえた", "かくした", "きづいた", "きどった"], "answer": "C", "answer_idx": 2}, {"id": 80, "qnum": 50, "stem": "お酒を飲んだ（ ）、大勢の前で緊張しないで話すことができた。", "options": ["せいの", "せいか", "せいだ", "せいに"], "answer": "B", "answer_idx": 1}, {"id": 81, "qnum": 31, "stem": "私たち夫婦は共働き（ ）、母に息子の面倒を見てもらっています。", "options": ["なのに", "にしろ", "から", "なので"], "answer": "D", "answer_idx": 3}, {"id": 82, "qnum": 32, "stem": "姉は推理小説が嫌いでしたが、その作品を読み始めてから（ ）変わりました。", "options": ["すっきりと", "ガラリと", "ぼんやりと", "のんでりと"], "answer": "B", "answer_idx": 1}, {"id": 83, "qnum": 33, "stem": "今回の事件は、うちの会社も（ ）影響を受けていると思う。", "options": ["少なからず", "かまわず", "問わす", "かかわらず"], "answer": "A", "answer_idx": 0}, {"id": 84, "qnum": 34, "stem": "（ ）お腹が空いているといっても、こんなにたくさん食べられない。", "options": ["いくつ", "あまり", "いつも", "いくら"], "answer": "D", "answer_idx": 3}, {"id": 85, "qnum": 35, "stem": "両親は高齢なので、これを（ ）、私たちと一緒に都会で生活していくことを考えた。", "options": ["求めて", "基に", "機に", "思って"], "answer": "C", "answer_idx": 2}, {"id": 86, "qnum": 36, "stem": "都市の生活のほとんど（ ）お金が必要です。", "options": ["にとって", "にして", "によって", "において"], "answer": "A", "answer_idx": 0}, {"id": 87, "qnum": 37, "stem": "全く運動していない（ ）、体調が悪くなる（ ）だ。", "options": ["ため、以上", "のに、一方", "ため、一方", "のに、以上"], "answer": "C", "answer_idx": 2}, {"id": 88, "qnum": 38, "stem": "お金を借りたいんだけど、なかなか言い出し（ ）。", "options": ["てしまった", "にくい", "やすい", "てくる"], "answer": "B", "answer_idx": 1}, {"id": 89, "qnum": 39, "stem": "そのレストランが人気なのは、スタッフ全員が（ ）おもてなしを心がけているからだ。", "options": ["心地よい", "格好良い", "座りよい", "具合よい"], "answer": "A", "answer_idx": 0}, {"id": 90, "qnum": 40, "stem": "同じ商品なら、コンビニ（ ）スーパーで買ったほうが安い。", "options": ["から", "でも", "より", "にしろ"], "answer": "C", "answer_idx": 2}, {"id": 91, "qnum": 41, "stem": "春になって桜が芽吹いて（ ）。", "options": ["いった", "きた", "しまった", "おいた"], "answer": "B", "answer_idx": 1}, {"id": 92, "qnum": 42, "stem": "大人になった（ ）、いつもわがままなことを言う。", "options": ["といっても", "からして", "だけであって", "以上"], "answer": "A", "answer_idx": 0}, {"id": 93, "qnum": 43, "stem": "希望の大学に受かったと知り、母はなんと（ ）しまった。", "options": ["泣き出て", "泣き来て", "泣き出して", "泣きいって"], "answer": "C", "answer_idx": 2}, {"id": 94, "qnum": 44, "stem": "徹夜のせいで、生活習慣病になる若者が増える（ ）。", "options": ["以上だ", "中心だ", "からだ", "一方だ"], "answer": "D", "answer_idx": 3}, {"id": 95, "qnum": 45, "stem": "都市では、キュウリ一本（ ）スーパーに買い物に行かないと食べられない。", "options": ["でも", "から", "だけ", "のみ"], "answer": "A", "answer_idx": 0}, {"id": 96, "qnum": 46, "stem": "わずか一年半で、両親は家に帰りたいと（ ）。", "options": ["言い出した", "言い返した", "言い戻した", "言いかけた"], "answer": "A", "answer_idx": 0}, {"id": 97, "qnum": 47, "stem": "日本人（ ）米は欠かせないものだ。", "options": ["として", "に関して", "にとって", "にしても"], "answer": "C", "answer_idx": 2}, {"id": 98, "qnum": 48, "stem": "私は価値観というものは人それぞれ違うことに（ ）、両親の決断が理解できました。", "options": ["気おち", "気くばり", "気づき", "気づかい"], "answer": "C", "answer_idx": 2}, {"id": 99, "qnum": 49, "stem": "この町には新しい都市型の（ ）が誕生しました。", "options": ["コミュニケーション", "コミュニティー", "コミュニカティブ", "コミュニケ"], "answer": "B", "answer_idx": 1}, {"id": 100, "qnum": 50, "stem": "大学を卒業し（ ）、ずっとこの会社で働いて（ ）。", "options": ["たら、きた", "たら、いく", "てから、きた", "てから、いく"], "answer": "C", "answer_idx": 2}, {"id": 101, "qnum": 31, "stem": "平日は使わないことを条件（ ）、子どもにゲーム機を買ってあげることにしました。", "options": ["において", "として", "によって", "にとって"], "answer": "B", "answer_idx": 1}, {"id": 102, "qnum": 32, "stem": "科学技術の発達は、私たちの生活を豊かにした（ ）、様々な問題も引き起こしている。", "options": ["側面", "裏面", "反面", "方面"], "answer": "C", "answer_idx": 2}, {"id": 103, "qnum": 33, "stem": "母は私に毎日おいしい料理を作って（ ）", "options": ["もらう", "あける", "やる", "くれる"], "answer": "D", "answer_idx": 3}, {"id": 104, "qnum": 34, "stem": "その小説を読み（ ）、私にも読ませていただけませんか。", "options": ["終わったら", "終わると", "終わるなら", "終われば"], "answer": "A", "answer_idx": 0}, {"id": 105, "qnum": 35, "stem": "今週の宿題は、旅行の思い出をテーマ（ ）作文を書くことです。", "options": ["だった", "である", "たびに", "とした"], "answer": "D", "answer_idx": 3}, {"id": 106, "qnum": 36, "stem": "当店の製品は全て職人が心を（ ）手作業で作ったものです。", "options": ["込んで", "込めて", "含めて", "含んで"], "answer": "B", "answer_idx": 1}, {"id": 107, "qnum": 37, "stem": "課題解決能力も重要だが、課題（ ）能力はもっと重要だ。", "options": ["発覚", "発明", "発見", "発言"], "answer": "C", "answer_idx": 2}, {"id": 108, "qnum": 38, "stem": "新しいキャンパスで迷子になりながら、やっと講義棟に（ ）。", "options": ["回り込んだ", "辿り着いた", "巡り合った", "歩き回った"], "answer": "B", "answer_idx": 1}, {"id": 109, "qnum": 39, "stem": "祖父は年を（ ）今日還暦を迎えた。", "options": ["増やして", "連ねて", "増えて", "重ねて"], "answer": "D", "answer_idx": 3}, {"id": 110, "qnum": 40, "stem": "彼女は人間関係に対して、いつも真摯に（ ）。", "options": ["向かっている", "向いている", "向き直っている", "向き合っている"], "answer": "D", "answer_idx": 3}, {"id": 111, "qnum": 41, "stem": "田中君は上司の言いつけをよく守る（ ）な人だ。", "options": ["率直", "素質", "直接", "素直"], "answer": "D", "answer_idx": 3}, {"id": 112, "qnum": 42, "stem": "荷物が増えれば増える（ ）整理が大変になる。", "options": ["ほど", "ため", "うち", "さえ"], "answer": "A", "answer_idx": 0}, {"id": 113, "qnum": 43, "stem": "彼は病気のため、海外出張が一か月（ ）。", "options": ["延ぴた", "延ばした", "伸びた", "伸ばした"], "answer": "A", "answer_idx": 0}, {"id": 114, "qnum": 44, "stem": "世の中の文学作品はいくつかの（ ）に分けることができる。", "options": ["ジャンル", "ジャンボ", "ジャンプ", "ジャンク"], "answer": "A", "answer_idx": 0}, {"id": 115, "qnum": 45, "stem": "大事なプロジェクトを成功させようと汗を（ ）。", "options": ["流れる", "流す", "出れる", "出す"], "answer": "B", "answer_idx": 1}, {"id": 116, "qnum": 46, "stem": "将来IT（ ）になりたいので、今プログラミングに関する知識を全面的に学んでいる。", "options": ["エンジニア", "エンディング", "エンジンアリング", "エンターテイメント"], "answer": "A", "answer_idx": 0}, {"id": 117, "qnum": 47, "stem": "今年はフランス語の勉強（ ）、生け花もやってみたい。", "options": ["に関して", "に対して", "に従って", "に加えて"], "answer": "D", "answer_idx": 3}, {"id": 118, "qnum": 48, "stem": "今日のお弁当には、焼き魚（ ）入っていれば高野豆腐も入っていてとても美味しかった。", "options": ["も", "に", "で", "へ"], "answer": "A", "answer_idx": 0}, {"id": 119, "qnum": 49, "stem": "中国語を母語（ ）人はその中国語検定試験を受験できないことになっている。", "options": ["とする", "となる", "になる", "でする"], "answer": "A", "answer_idx": 0}, {"id": 120, "qnum": 50, "stem": "マンションを借りたいが、いい物件が（ ）困っている。", "options": ["見つからない", "見つからずに", "見つからなくて", "見つからないで"], "answer": "C", "answer_idx": 2}].map(q => ({id: q.id, stem: q.stem, options: q.options, correct_index: q.answer_idx}));
+
+
+// ========== 核心功能 ==========
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function getRandomQuestions(data, count) {
+  const shuffled = shuffleArray(data);
+  return shuffled.slice(0, Math.min(count, shuffled.length));
+}
+
+function shuffleOptions(q) {
+  if (!q.options) return q;
+  const opts = q.options.map((t, i) => ({ text: t, isCorrect: i === q.correct_index }));
+  const shuffled = shuffleArray(opts);
+  return {
+    ...q,
+    options: shuffled.map(o => o.text),
+    correct_index: shuffled.findIndex(o => o.isCorrect)
+  };
+}
+
+// 模块配置
+const MODULES = {
+  read: { data: RD_DATA, cls: 'm-read', accent: '#c13b2a', title: '下線部の単語の正しい読み方を選びなさい', subtitle: '大学日本語Ⅲ · 第2冊 5〜10課', label: '単語読み', mode: 'choice', shuffleOpts: true },
+  kanji: { data: KJ_DATA, cls: 'm-kanji', accent: '#2d4a7a', title: '次の仮名の正しい漢字表記を選びなさい', subtitle: '大学日本語Ⅲ · 第2冊 5〜10課', label: '漢字', mode: 'choice', shuffleOpts: true },
+  gairaigo: { data: GG_DATA, cls: 'm-gairaigo', accent: '#2d6e3a', title: '次の外来語を中国語に訳しなさい', subtitle: '大学日本語Ⅲ · 第2冊 5〜10課', label: '外来語', mode: 'input' },
+  grammar: { data: GR_DATA, cls: 'm-grammar', accent: '#8b6e2e', title: '（ ）に入れるのに最も適当なものを選びなさい', subtitle: '大学日本語Ⅲ · 第2冊 5〜10課', label: '文法', mode: 'choice', shuffleOpts: false },
+  combi: { data: null, cls: 'm-combi', accent: '#5a3a7a', title: '総合実力テスト', subtitle: '単語・漢字・外来語・文法の総合', label: '総合テスト', mode: 'mixed' }
+};
+
+let quizCount = { read: 15, kanji: 10, gairaigo: 10, grammar: 20 };
+let stateMap = {};
+let currentMod = 'read';
+let globalRandomize = true; // 全局选项随机开关
+
+function initState(mod) {
+  if (!stateMap[mod]) {
+    stateMap[mod] = { answered: {}, firstTry: {}, firstTryIdx: {}, inputs: {}, questions: [] };
+  }
+}
+
+function shouldShuffle(mod) {
+  return globalRandomize && MODULES[mod]?.shuffleOpts === true;
+}
+
+function generateRandomQuestions(mod) {
+  const st = stateMap[mod];
+  if (mod === 'combi') {
+    const readQ = getRandomQuestions(RD_DATA, quizCount.read).map(q => {
+      let newQ = { ...q, source: 'read' };
+      if (shouldShuffle('read')) newQ = shuffleOptions(newQ);
+      return newQ;
+    });
+    const kanjiQ = getRandomQuestions(KJ_DATA, quizCount.kanji).map(q => {
+      let newQ = { ...q, source: 'kanji' };
+      if (shouldShuffle('kanji')) newQ = shuffleOptions(newQ);
+      return newQ;
+    });
+    const gaiQ = getRandomQuestions(GG_DATA, quizCount.gairaigo).map(q => ({ ...q, source: 'gairaigo' }));
+    const grammarQ = getRandomQuestions(GR_DATA, quizCount.grammar).map(q => {
+      let newQ = { ...q, source: 'grammar' };
+      if (shouldShuffle('grammar')) newQ = shuffleOptions(newQ);
+      return newQ;
+    });
+    st.questions = [...readQ, ...kanjiQ, ...gaiQ, ...grammarQ];
+  } else {
+    const config = MODULES[mod];
+    let qs = getRandomQuestions(config.data, quizCount[mod]);
+    if (shouldShuffle(mod)) {
+      qs = qs.map(q => shuffleOptions(q));
+    }
+    st.questions = qs;
+  }
+}
+
+function switchModule(mod) {
+  currentMod = mod;
+  initState(mod);
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-mod="${mod}"]`)?.classList.add('active');
+  document.body.className = `mode-${mod}`;
+  if (!stateMap[mod].questions.length) generateRandomQuestions(mod);
+  renderModule(mod);
+}
+
+function renderModule(mod) {
+  const container = document.getElementById('mainContainer');
+  const st = stateMap[mod];
+  const questions = st.questions || [];
+  let html = `<div class="module-panel show m-${mod}">`;
+  const config = MODULES[mod];
+  html += `<div class="m-header">
+    <span class="label">${config.label}</span>
+    <h1>${config.title}</h1>
+    <div class="subtitle">${config.subtitle}</div>
+  </div>`;
+  if (mod === 'gairaigo') {
+    html += `<div class="gai-quick-bar">
+      <button class="submit-all-btn" onclick="submitAllGairaigo()">すべて提出</button>
+      <button class="reveal-all-btn" onclick="revealAllGairaigo()">すべて答えを見る</button>
+      <span class="gai-quick-score" id="gaiQuickScore"></span>
+    </div>`;
+  }
+  questions.forEach((q, idx) => {
+    html += renderQuestion(q, idx, mod);
+  });
+  html += `</div>`;
+  container.innerHTML = html;
+  updateScoreBar(mod);
+  if (mod === 'gairaigo') updateGaiQuickScore(mod);
+}
+
+function renderQuestion(q, idx, mod) {
+  const st = stateMap[mod];
+  const answered = st.answered[idx] || false;
+  const selectedIdx = st.firstTryIdx[idx];
+  const isGairaigo = q.accept !== undefined;
+  let html = `<div class="q-card" id="q-${mod}-${idx}">`;
+  
+  // ---- 修改 badge 显示逻辑 ----
+  let badgeText = '';
+  if (mod === 'combi' && q.source) {
+    if (q.source === 'read') {
+      badgeText = q.word || '';          // 显示划线单词
+    } else {
+      badgeText = q.source;              // 显示来源（kanji/gairaigo/grammar）
+    }
+  } else if (mod === 'read') {
+    badgeText = q.word || '';            // 显示单词
+  } else {
+    badgeText = MODULES[mod]?.label || ''; // 其他模块显示标签（如「漢字」「文法」）
+  }
+  // 如果 badgeText 过长，用 CSS 截断
+  html += `<div class="q-num-row"><span class="q-num">${idx+1}</span><span class="q-badge" title="${badgeText}">${badgeText}</span></div>`;
+  // ---------------------------------
+
+  if (mod === 'read' || mod === 'kanji' || mod === 'grammar' || (mod === 'combi' && !isGairaigo)) {
+    let stem = q.stem || q.sentence || q.word || q.kana || '';
+    if (mod === 'read' || (mod === 'combi' && q.source === 'read')) {
+      stem = q.sentence.replace(q.word, `<span class="hl">${q.word}</span>`);
+    } else if (mod === 'kanji' || (mod === 'combi' && q.source === 'kanji')) {
+      stem = `「${q.kana}」の漢字表記`;
+    } else if (mod === 'grammar' || (mod === 'combi' && q.source === 'grammar')) {
+      stem = q.stem;
+    }
+    html += `<div class="q-stem">${stem}</div>`;
+    html += `<div class="q-prompt">${(mod==='grammar'||(mod==='combi'&&q.source==='grammar'))?'（ ）に入る適切なものを選びなさい':'正しいものを選びなさい'}</div>`;
+    html += `<ul class="opts">`;
+    q.options.forEach((opt, oi) => {
+      let btnClass = 'opt-btn';
+      let marker = String.fromCharCode(65 + oi);
+      let disabled = '';
+      if (answered) {
+        disabled = 'disabled';
+        if (selectedIdx === oi) {
+          if (oi === q.correct_index) btnClass += ' correct-pick';
+          else btnClass += ' wrong-pick';
+        }
+      }
+      html += `<li><button class="${btnClass}" onclick="handleChoiceClick('${mod}', ${idx}, ${oi})" ${disabled}>
+        <span class="opt-marker">${marker}</span> ${opt}
+      </button></li>`;
+    });
+    html += `</ul>`;
+    if (answered) {
+      const isCorrect = st.firstTry[idx] === true;
+      const feedbackText = isCorrect ? '✅ 正解！' : `❌ 不正解。正解は ${q.options[q.correct_index]} です。`;
+      html += `<div class="feedback ${isCorrect ? 'ok' : 'ng'}">${feedbackText}</div>`;
+    }
+  } else {
+    let stem = q.word || q.stem || '';
+    html += `<div class="q-stem">「${stem}」の中国語訳を入力してください。</div>`;
+    const inputVal = st.inputs[idx] || '';
+    const disabled = answered ? 'disabled' : '';
+    html += `<div class="input-row">
+      <input class="answer-input" type="text" id="input-${mod}-${idx}" value="${inputVal}" placeholder="中国語で入力" ${disabled}>
+      <button class="check-btn" onclick="handleInputSubmit('${mod}', ${idx})" ${disabled}>チェック</button>
+    </div>`;
+    if (answered) {
+      const isCorrect = st.firstTry[idx] === true;
+      const acceptStr = q.accept.join('、');
+      const feedbackText = isCorrect ? '✅ 正解！' : `❌ 不正解。正解は「${acceptStr}」です。`;
+      html += `<div class="feedback ${isCorrect ? 'ok' : 'ng'}">${feedbackText}</div>`;
+    }
+  }
+  html += `</div>`;
+  return html;
+}
+
+function handleChoiceClick(mod, qIndex, optionIndex) {
+  const st = stateMap[mod];
+  if (st.answered[qIndex]) return;
+  const q = st.questions[qIndex];
+  st.answered[qIndex] = true;
+  st.firstTryIdx[qIndex] = optionIndex;
+  st.firstTry[qIndex] = (optionIndex === q.correct_index);
+  renderModule(mod);
+}
+
+function handleInputSubmit(mod, qIndex) {
+  const st = stateMap[mod];
+  if (st.answered[qIndex]) return;
+  const q = st.questions[qIndex];
+  const input = document.getElementById(`input-${mod}-${qIndex}`);
+  if (!input) return;
+  const val = input.value.trim();
+  st.inputs[qIndex] = val;
+  const accept = q.accept || [];
+  const isCorrect = accept.some(a => a === val);
+  st.answered[qIndex] = true;
+  st.firstTry[qIndex] = isCorrect;
+  renderModule(mod);
+}
+
+function updateScoreBar(mod) {
+  const st = stateMap[mod];
+  const questions = st.questions || [];
+  const total = questions.length;
+  let answered = 0, correct = 0;
+  for (let i = 0; i < total; i++) {
+    if (st.answered[i]) { answered++; if (st.firstTry[i] === true) correct++; }
+  }
+  document.getElementById('progText').textContent = `${answered} / ${total}`;
+  const progBar = document.getElementById('progBar');
+  progBar.style.width = total ? `${(answered/total)*100}%` : '0%';
+  const config = MODULES[mod];
+  progBar.style.backgroundColor = config.accent;
+  document.getElementById('scoreValue').textContent = correct;
+  document.getElementById('scoreTotal').textContent = total;
+  const rate = answered ? Math.round((correct/answered)*100) : 0;
+  document.getElementById('rateValue').textContent = `${rate}%`;
+}
+
+function resetCurrent() {
+  const mod = currentMod;
+  stateMap[mod] = { answered: {}, firstTry: {}, firstTryIdx: {}, inputs: {}, questions: [] };
+  generateRandomQuestions(mod);
+  renderModule(mod);
+}
+
+function resetOnlyAnswer() {
+  const mod = currentMod;
+  const st = stateMap[mod];
+  const questions = st.questions || [];
+  st.answered = {};
+  st.firstTry = {};
+  st.firstTryIdx = {};
+  st.inputs = {};
+  const newQuestions = questions.map(q => {
+    const sourceMod = q.source || mod;
+    if (q.options && shouldShuffle(sourceMod)) {
+      return shuffleOptions(q);
+    }
+    return q;
+  });
+  st.questions = newQuestions;
+  renderModule(mod);
+}
+
+function submitAllGairaigo() {
+  const mod = 'gairaigo';
+  const st = stateMap[mod];
+  st.questions.forEach((q, idx) => {
+    if (!st.answered[idx]) {
+      const input = document.getElementById(`input-${mod}-${idx}`);
+      if (input) {
+        const val = input.value.trim();
+        st.inputs[idx] = val;
+        const accept = q.accept || [];
+        st.answered[idx] = true;
+        st.firstTry[idx] = accept.some(a => a === val);
+      }
+    }
+  });
+  renderModule(mod);
+}
+
+function revealAllGairaigo() {
+  const mod = 'gairaigo';
+  const st = stateMap[mod];
+  st.questions.forEach((q, idx) => {
+    if (!st.answered[idx]) {
+      const input = document.getElementById(`input-${mod}-${idx}`);
+      if (input) input.value = q.accept[0] || '';
+      handleInputSubmit(mod, idx);
+    }
+  });
+}
+
+function updateGaiQuickScore(mod) {
+  const st = stateMap[mod];
+  const correct = st.questions.reduce((acc, _, idx) => acc + (st.answered[idx] && st.firstTry[idx] ? 1 : 0), 0);
+  const el = document.getElementById('gaiQuickScore');
+  if (el) el.textContent = `${correct}/${st.questions.length}`;
+}
+
+function applyCustomCount() {
+  const read = parseInt(document.getElementById('cntRead').value) || 15;
+  const kanji = parseInt(document.getElementById('cntKanji').value) || 10;
+  const gai = parseInt(document.getElementById('cntGai').value) || 10;
+  const gram = parseInt(document.getElementById('cntGram').value) || 20;
+  quizCount.read = Math.min(Math.max(read, 1), RD_DATA.length);
+  quizCount.kanji = Math.min(Math.max(kanji, 1), KJ_DATA.length);
+  quizCount.gairaigo = Math.min(Math.max(gai, 1), GG_DATA.length);
+  quizCount.grammar = Math.min(Math.max(gram, 1), GR_DATA.length);
+  document.getElementById('cntRead').value = quizCount.read;
+  document.getElementById('cntKanji').value = quizCount.kanji;
+  document.getElementById('cntGai').value = quizCount.gairaigo;
+  document.getElementById('cntGram').value = quizCount.grammar;
+  const mod = currentMod;
+  stateMap[mod] = { answered: {}, firstTry: {}, firstTryIdx: {}, inputs: {}, questions: [] };
+  generateRandomQuestions(mod);
+  renderModule(mod);
+}
+
+function toggleRandomize() {
+  const checkbox = document.getElementById('randomizeOptions');
+  globalRandomize = checkbox.checked;
+  const mod = currentMod;
+  stateMap[mod] = { answered: {}, firstTry: {}, firstTryIdx: {}, inputs: {}, questions: [] };
+  generateRandomQuestions(mod);
+  renderModule(mod);
+}
+
+window.onload = function() {
+  for (let mod in MODULES) initState(mod);
+  document.getElementById('cntRead').value = quizCount.read;
+  document.getElementById('cntKanji').value = quizCount.kanji;
+  document.getElementById('cntGai').value = quizCount.gairaigo;
+  document.getElementById('cntGram').value = quizCount.grammar;
+  // 如果启用随机开关，取消注释下面一行
+  document.getElementById('randomizeOptions').checked = globalRandomize;
+  switchModule('read');
+};
+</script>
+</body>
+</html>
